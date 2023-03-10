@@ -93,10 +93,26 @@ func (msgHandler *MsgHandler) MsgHandler(msg []byte) {
 		switch wsHeader.ProtoVer {
 		case CmdZlibProto:
 			msgBody = msgHandler.CmdZlibProtoDecoder(&wsHeader, msg)
-			msgHandler.MsgHandler(msgBody)
+			cmdHeader = WsHeaderDecoder(msgBody)
+			for {
+				msgHandler.CmdHandler(&cmdHeader, msgBody[:int(cmdHeader.PackageLen)])
+				msgBody = msgBody[cmdHeader.PackageLen:]
+				if len(msgBody) == 0 {
+					break
+				}
+				cmdHeader = WsHeaderDecoder(msgBody)
+			}
 		case CmdBrotliProto:
 			msgBody = msgHandler.CmdBrotliProtoDecoder(&wsHeader, msg)
-			msgHandler.MsgHandler(msgBody)
+			cmdHeader = WsHeaderDecoder(msgBody)
+			for {
+				msgHandler.CmdHandler(&cmdHeader, msgBody[:int(cmdHeader.PackageLen)])
+				msgBody = msgBody[cmdHeader.PackageLen:]
+				if len(msgBody) == 0 {
+					break
+				}
+				cmdHeader = WsHeaderDecoder(msgBody)
+			}
 		default:
 			msgHandler.CmdHandler(&cmdHeader, msgBody[:int(cmdHeader.PackageLen)])
 		}
